@@ -1,0 +1,38 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="script-src 'self' 'unsafe-inline';"
+    />
+    <title>Your Electron App</title>
+  </head>
+  <body>
+    <h1>Hello from Electron!</h1>
+    <button onclick="runPythonScript()">Run Python Script</button>
+
+    <!-- Add a new div to display the Python script result -->
+    <div id="pythonScriptResult"></div>
+
+    <script>
+      // Add the following function
+      async function runPythonScript() {
+        try {
+          const result = await window.ipcRenderer.invoke(
+            "run-python-script",
+            "./teamylesium.py"
+          );
+          console.log(result);
+
+          // Display the Python script result on the UI
+          document.getElementById("pythonScriptResult").innerText =
+            JSON.stringify(result, null, 2);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    </script>
+  </body>
+</html>
