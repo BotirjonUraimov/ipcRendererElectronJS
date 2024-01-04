@@ -5,11 +5,11 @@ import cv2
 import json
 import io
 import struct
-import matplotlib.pyplot as plt
+##import matplotlib.pyplot as plt
 import numpy as np
 import time
 
-base_url = "http://13.125.241.55:5000"
+base_url = "http://127.0.0.1:5000"
 
 ## 3차원 자세 분석 API / 정면
 url = f"{base_url}/pose_analysis/front"
