@@ -12,6 +12,10 @@
   "license": "ISC",
   "dependencies": {
     "electron": "^28.1.1",
+    "glfw": "^0.0.0",
     "python-shell": "^5.0.0"
+  },
+  "devDependencies": {
+    "electron-rebuild": "^3.2.9"
   }
 }
