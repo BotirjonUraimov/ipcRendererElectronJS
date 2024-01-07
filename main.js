@@ -1,10 +1,8 @@
 // main.js
-const { app, BrowserWindow, ipcMain   } = require("electron");
-const { PythonShell } = require('python-shell');
-
+const { app, BrowserWindow, ipcMain } = require("electron");
 const { join } = require("path");
 const { exec } = require("child_process");
-const {spawn} = require('child_process');
+const { spawn } = require('child_process');
 const url = require('url');
 
 let mainWindow;
@@ -26,12 +24,12 @@ function createWindow() {
     mainWindow = null;
   });
 
-   // Load the index.html file
- mainWindow.loadURL(url.format({
-  pathname: join(__dirname, './index.html'),
-  protocol: 'file:',
-  slashes: true
-}));
+  // Load the index.html file
+  mainWindow.loadURL(url.format({
+    pathname: join(__dirname, './index.html'),
+    protocol: 'file:',
+    slashes: true
+  }));
 
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
@@ -39,15 +37,25 @@ function createWindow() {
   const pythonScriptPath = join(__dirname, 'jumping.py');
   const pythonProcess = spawn('python', [pythonScriptPath]);
 
+  let buffer = '';
+
   pythonProcess.stdout.on('data', (data) => {
-    try {
-      const framesData = JSON.parse(data);
-      console.log('Received frames:', framesData);
-      mainWindow.webContents.send('frames', framesData);
-      console.log('Frames data sent successfully.');
-  } catch (parseError) {
-      console.error(parseError.message);
-  }
+    const messages = data.toString().split('\n');
+    messages.forEach((message) => {
+      try {
+        const framesData = JSON.parse(message);
+        console.log('Received frames:', framesData);
+        mainWindow.webContents.send('frames', framesData);
+        console.log('Frames data sent successfully.');
+      } catch (parseError) {
+        if (parseError instanceof SyntaxError) {
+          // Ignore non-JSON log messages
+          console.log('Log:', message);
+        } else {
+          console.error(parseError.message);
+        }
+      }
+    });
   });
 
   pythonProcess.stderr.on('data', (data) => {
@@ -57,39 +65,7 @@ function createWindow() {
   pythonProcess.on('close', (code) => {
     console.log(`Python script finished with code ${code}`);
   });
-
-
-
-   // Run Python script using PythonShell
-   //const pythonScriptPath = join(__dirname, 'jumping.py');
-
-  //  exec(`python ${pythonScriptPath}`, (error, stdout, stderr) => {
-  //   if (error) {
-  //     console.error(`Error executing Python script: ${error.message}`);
-  //   } else {
-  //     console.log('Python script finished');
-  //   }
-  // });
-
-
-
-  // PythonShell.run('jumping.py', options, function (err) {
-  //   if (err) throw err;
-  //   console.log('Python script finished');
-  // });
-
-  // // Run Python script
-  // PythonShell.run('real_sense_capture.py', null, function (err) {
-  //   if (err) throw err;
-  //   console.log('Python script finished');
-  // });
-
-
 }
-
-
-
-  
 
 app.on("ready", createWindow);
 
@@ -101,26 +77,23 @@ app.on("activate", function () {
   if (mainWindow === null) createWindow();
 });
 
-// Add the following IPC handler
-ipcMain.handle("run-python-script", async (event, scriptPath) => {
-  return new Promise((resolve, reject) => {
-    exec(`python ${scriptPath}`, (error, stdout, stderr) => {
-      if (error) {
-        reject(error.message);
-      } else {
-        try {
-          const parsedData = JSON.parse(stdout);
-          resolve(parsedData);
-        } catch (parseError) {
-          reject(parseError.message);
-        }
-      }
-    });
-  });
-});
+let renderedFrames = [];
 
-// IPC to receive frames from Python
 ipcMain.on('frames', (event, framesData) => {
   // Use framesData to update the display on your Electron.js app
   console.log(framesData);
+  mainWindow.webContents.send('frames', framesData);
+
+  // Add the rendered frame path to the list
+  renderedFrames.push(framesData.frame_path);
+});
+
+ipcMain.handle('get-rendered-frames', (event) => {
+  // Send the list of rendered frames to the renderer process
+  return renderedFrames;
+});
+
+ipcMain.on('clear-rendered-frames', (event) => {
+  // Clear the list of rendered frames
+  renderedFrames = [];
 });

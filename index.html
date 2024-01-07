@@ -11,114 +11,31 @@
   </head>
   <body>
     <h1>Hello from Electron!</h1>
-    <button onclick="runPythonScript()">Run Python Script</button>
-
-    <!-- Add a new div to display the Python script result -->
     <div id="pythonScriptResult"></div>
 
-    <h1>RealSense Frames Display</h1>
-  <div id="rgb-container"></div>
-  <div id="depth-container"></div>
-
-
-
+    <h1>Saved Images Display</h1>
+    <canvas id="savedImageCanvas" width="640" height="480"></canvas>
 
     <script>
+      window.onload = function () {
+        const { ipcRenderer } = require('electron');
 
-const { ipcRenderer } = require('electron');
+        ipcRenderer.on('frames', (event, framesData) => {
+          const savedImageCanvas = document.getElementById('savedImageCanvas');
+          const context = savedImageCanvas.getContext('2d');
 
-// IPC to receive frames from Python
-ipcRenderer.on('frames', async (event, framesData) => {
-      // Update the display on your Electron.js app
-      const rgbContainer = document.getElementById('rgb-container');
-      const depthContainer = document.getElementById('depth-container');
+          const image = new Image();
+          image.onload = function () {
+            context.clearRect(0, 0, savedImageCanvas.width, savedImageCanvas.height);
+            context.drawImage(image, 0, 0, savedImageCanvas.width, savedImageCanvas.height);
+          };
 
-      // Assuming framesData has 'rgb' and 'depth' properties
-      if ('rgb' in framesData && 'depth' in framesData) {
-    // Assuming framesData has 'rgb' and 'depth' properties
+          image.src = `file://${__dirname}/${framesData.frame_path}`;
 
-    const rgbImage = framesData.rgb;
-    const depthImage = framesData.depth;
+        });
 
-    console.log('RGB Image Data:', rgbImage);
-console.log('Depth Image Data:', depthImage)
-
-    // Update the display (you may need to adjust this based on your requirements)
-    try {
-      const rgbBase64 = await arrayToBase64(rgbImage);
-      const depthBase64 = await arrayToBase64(depthImage);
-
-      rgbContainer.innerHTML = `<img src="data:image/png;base64,${rgbBase64}"/>`;
-      depthContainer.innerHTML = `<img src="data:image/png;base64,${depthBase64}"/>`;
-    } catch (error) {
-      console.error('Error converting array to base64:', error);
-    }
-  } else {
-    console.error('Invalid framesData. Expected properties: rgb, depth');
-  }
-//       if (rgbImage && depthImage) {
-//   updateImageDisplay(rgbContainer, rgbImage);
-//   updateImageDisplay(depthContainer, depthImage);
-// } else {
-//   console.error('Invalid framesData:', framesData);
-// }
-
-// function updateImageDisplay(container, imageData) {
-//   if (container && imageData) {
-//     try {
-//       const base64data = arrayToBase64(imageData);
-//       container.innerHTML = `<img src="data:image/png;base64,${base64data}"/>`;
-//     } catch (error) {
-//       console.error('Error updating image display:', error);
-//     }
-//   } else {
-//     console.error('Invalid container or imageData:', container, imageData);
-//   }
-// }
-
-      // // Update the display (you may need to adjust this based on your requirements)
-      // rgbContainer.innerHTML = `<img src="data:image/png;base64,${arrayToBase64(rgbImage)}"/>`;
-      // depthContainer.innerHTML = `<img src="data:image/png;base64,${arrayToBase64(depthImage)}"/>`;
-});
-
-    // Utility function to convert array to base64 (adjust as needed)
-    function arrayToBase64(array) {
-      return new Promise((resolve, reject) => {
-    // Convert the array to a PNG image (adjust this based on your image format)
-    // This is just a basic example; you may need to use a different method
-    const pngImage = new Uint8Array(array);
-    const blob = new Blob([pngImage], { type: 'image/png' });
-
-    // Convert the blob URL to base64
-    const reader = new FileReader();
-
-    reader.onloadend = function () {
-      const base64data = reader.result.split(',')[1];
-      resolve(base64data);
-    };
-
-    reader.readAsDataURL(blob);
-  });
-}
-
-
-
-      // Add the following function
-      async function runPythonScript() {
-        try {
-          const result = await window.ipcRenderer.invoke(
-            "run-python-script",
-            "./teamylesium.py"
-          );
-          console.log(result);
-
-          // Display the Python script result on the UI
-          document.getElementById("pythonScriptResult").innerText =
-            JSON.stringify(result, null, 2);
-        } catch (error) {
-          console.error(error);
-        }
-      }
+     
+      };
     </script>
   </body>
 </html>

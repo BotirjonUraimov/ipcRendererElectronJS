@@ -3,6 +3,7 @@ import numpy as np
 import pyrealsense2 as rs
 import json
 import sys
+import os
 
 # Configure RealSense pipeline
 pipeline = rs.pipeline()
@@ -12,7 +13,15 @@ config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
 
 # Start streaming
 pipeline.start(config)
-frame_id = 0  # Initialize frame ID
+
+# Create a directory to save images
+output_dir = 'output_images'
+os.makedirs(output_dir, exist_ok=True)
+
+# Set the frame rate for saving images (frames per second)
+save_frame_rate = 20
+frame_interval = int(30 / save_frame_rate)
+frame_count = 0
 
 try:
     while True:
@@ -21,38 +30,29 @@ try:
         depth_frame = frames.get_depth_frame()
         color_frame = frames.get_color_frame()
 
-        if not depth_frame or not color_frame:
-            continue
+        if depth_frame and color_frame:
+            # Convert frames to numpy arrays
+            depth_image = np.asanyarray(depth_frame.get_data())
+            color_image = np.asanyarray(color_frame.get_data())
 
-        # Convert frames to numpy arrays
-        depth_image = np.asanyarray(depth_frame.get_data())
-        color_image = np.asanyarray(color_frame.get_data())
+            # Save color image every frame_interval frames
+            if frame_count % frame_interval == 0:
+                image_filename = os.path.join(output_dir, f'frame_{frame_count // frame_interval}.png')
+                cv2.imwrite(image_filename, color_image)
+                #print(f"Saved {image_filename}")
 
-        frame_id += 1
+                # Send the image path to Electron.js
+                sys.stdout.flush()
 
-         # Send frames to Electron.js
-        frames_data = {
-            'id': frame_id,
-            'rgb': color_image.tolist(),
-            'depth': depth_image.tolist()
-        }
-        print(json.dumps(frames_data))
-        sys.stdout.flush()
+            frame_count += 1
 
-        # Display RGB image
-        #cv2.imshow("RGB Image", color_image)
-
-        # Display Depth image
-        #depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-        #cv2.imshow("Depth Image", depth_colormap)
-
-        # Save RGB and Depth images
-        #cv2.imwrite("rgb_image.jpg", color_image)
-        #cv2.imwrite("depth_image.jpg", depth_colormap)
-
-        # Break the loop by pressing 'q'
-        #if cv2.waitKey(1) & 0xFF == ord('q'):
-        #    break
+            # Send the JSON-formatted frames data to Electron.js
+            frames_data = {
+                'id': 1,
+                'frame_path': image_filename.replace(os.path.sep, '/'),
+            }
+            print(json.dumps(frames_data))
+            sys.stdout.flush()
 
 finally:
     # Stop streaming
