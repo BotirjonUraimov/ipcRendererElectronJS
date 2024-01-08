@@ -1,11 +1,20 @@
 // main.js
+
 const { app, BrowserWindow, ipcMain } = require("electron");
 const { join } = require("path");
 const { exec } = require("child_process");
 const { spawn } = require('child_process');
 const url = require('url');
+const fs = require('fs')
+const { promisify } = require('util');
+
+const unlinkAsync = promisify(fs.unlink);
+const readdirAsync = promisify(fs.readdir);  // Add this line
 
 let mainWindow;
+let lastRenderedFramePath = null;
+let pythonProcess; // Declare pythonProcess globally
+const outputImagesPath = join(__dirname, 'output_images');
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -13,8 +22,8 @@ function createWindow() {
     height: 600,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false, // Add this line
-      preload: join(__dirname, "./preload.js"), // Add this line
+      contextIsolation: false,
+      preload: join(__dirname, "./preload.js"),
     },
   });
 
@@ -24,20 +33,47 @@ function createWindow() {
     mainWindow = null;
   });
 
-  // Load the index.html file
   mainWindow.loadURL(url.format({
     pathname: join(__dirname, './index.html'),
     protocol: 'file:',
     slashes: true
   }));
 
-  // Open the DevTools.
   mainWindow.webContents.openDevTools();
+}
 
+app.on("ready", createWindow);
+
+app.on("window-all-closed", function () {
+  if (process.platform !== "darwin") app.quit();
+});
+
+app.on("activate", function () {
+  if (mainWindow === null) createWindow();
+});
+
+async function stopPythonScript() {
+  if (pythonProcess) {
+    pythonProcess.kill();
+    console.log("pythonProcess killed");
+
+     // Delete all frames in the output_images directory
+     try {
+      const files = await readdirAsync(outputImagesPath);
+      const unlinkPromises = files.map((file) => unlinkAsync(join(outputImagesPath, file)));
+      await Promise.all(unlinkPromises);
+      console.log('All frames deleted');
+    } catch (err) {
+      console.error(`Error deleting frames: ${err}`);
+    }
+
+
+  }
+}
+
+function startPythonScript() {
   const pythonScriptPath = join(__dirname, 'jumping.py');
-  const pythonProcess = spawn('python', [pythonScriptPath]);
-
-  let buffer = '';
+  pythonProcess = spawn('python', [pythonScriptPath]);
 
   pythonProcess.stdout.on('data', (data) => {
     const messages = data.toString().split('\n');
@@ -47,6 +83,9 @@ function createWindow() {
         console.log('Received frames:', framesData);
         mainWindow.webContents.send('frames', framesData);
         console.log('Frames data sent successfully.');
+
+        // Update the last rendered frame path
+        lastRenderedFramePath = framesData.frame_path;
       } catch (parseError) {
         if (parseError instanceof SyntaxError) {
           // Ignore non-JSON log messages
@@ -64,36 +103,24 @@ function createWindow() {
 
   pythonProcess.on('close', (code) => {
     console.log(`Python script finished with code ${code}`);
+
+    //Remove the last rendered frame from disk
+    // if (lastRenderedFramePath) {
+    //   fs.unlink(lastRenderedFramePath, (err) => {
+    //     if (err) {
+    //       console.error(`Error deleting frame: ${err}`);
+    //     } else {
+    //       console.log(`Frame deleted: ${lastRenderedFramePath}`);
+    //     }
+    //   });
+    // }
   });
 }
 
-app.on("ready", createWindow);
-
-app.on("window-all-closed", function () {
-  if (process.platform !== "darwin") app.quit();
+ipcMain.on('stop-python-script', () => {
+  stopPythonScript();
 });
 
-app.on("activate", function () {
-  if (mainWindow === null) createWindow();
-});
-
-let renderedFrames = [];
-
-ipcMain.on('frames', (event, framesData) => {
-  // Use framesData to update the display on your Electron.js app
-  console.log(framesData);
-  mainWindow.webContents.send('frames', framesData);
-
-  // Add the rendered frame path to the list
-  renderedFrames.push(framesData.frame_path);
-});
-
-ipcMain.handle('get-rendered-frames', (event) => {
-  // Send the list of rendered frames to the renderer process
-  return renderedFrames;
-});
-
-ipcMain.on('clear-rendered-frames', (event) => {
-  // Clear the list of rendered frames
-  renderedFrames = [];
+ipcMain.on('start-python-script', () => {
+  startPythonScript();
 });

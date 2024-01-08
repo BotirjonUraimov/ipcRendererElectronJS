@@ -1,4 +1,5 @@
 <!-- index.html -->
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -14,14 +15,24 @@
     <div id="pythonScriptResult"></div>
 
     <h1>Saved Images Display</h1>
+    <button id="startButton"> Start Button </button>
+
+  
     <canvas id="savedImageCanvas" width="640" height="480"></canvas>
+    <button id="stopButton"> stop Button </button>
+
 
     <script>
-      window.onload = function () {
+       window.onload = function () {
         const { ipcRenderer } = require('electron');
+        const savedImageCanvas = document.getElementById('savedImageCanvas');
+        let renderingStarted = false;
 
         ipcRenderer.on('frames', (event, framesData) => {
-          const savedImageCanvas = document.getElementById('savedImageCanvas');
+          if (!renderingStarted) {
+            return; // Skip rendering if not started
+          }
+
           const context = savedImageCanvas.getContext('2d');
 
           const image = new Image();
@@ -31,10 +42,30 @@
           };
 
           image.src = `file://${__dirname}/${framesData.frame_path}`;
-
         });
 
-     
+        document.getElementById('stopButton').addEventListener('click', () => {
+          ipcRenderer.send('stop-python-script');
+          console.log("Stop Button clicked");
+          savedImageCanvas.style.display = 'none';
+          renderingStarted = false; // Stop rendering
+        });
+
+        document.getElementById('startButton').addEventListener('click', () => {
+      ipcRenderer.send('start-python-script');
+      console.log("Start Button clicked");
+      savedImageCanvas.style.display = 'block';
+      renderingStarted = true;
+    });
+
+        // Get the list of rendered frames
+        ipcRenderer.invoke('get-rendered-frames').then((renderedFrames) => {
+          console.log('Rendered frames:', renderedFrames);
+          // Process the list as needed
+        });
+
+        // Clear the list of rendered frames when needed
+        ipcRenderer.send('clear-rendered-frames');
       };
     </script>
   </body>
