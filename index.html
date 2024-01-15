@@ -11,7 +11,7 @@
   </head>
   <body>
     <h1>Hello from Electron!</h1>
-    <button onclick="runPythonScript()">Run Python Script</button>
+    <button onclick="runPythonScript()">get data from API by python </button>
 
     <!-- Add a new div to display the Python script result -->
     <div id="pythonScriptResult"></div>
@@ -56,29 +56,7 @@ console.log('Depth Image Data:', depthImage)
   } else {
     console.error('Invalid framesData. Expected properties: rgb, depth');
   }
-//       if (rgbImage && depthImage) {
-//   updateImageDisplay(rgbContainer, rgbImage);
-//   updateImageDisplay(depthContainer, depthImage);
-// } else {
-//   console.error('Invalid framesData:', framesData);
-// }
 
-// function updateImageDisplay(container, imageData) {
-//   if (container && imageData) {
-//     try {
-//       const base64data = arrayToBase64(imageData);
-//       container.innerHTML = `<img src="data:image/png;base64,${base64data}"/>`;
-//     } catch (error) {
-//       console.error('Error updating image display:', error);
-//     }
-//   } else {
-//     console.error('Invalid container or imageData:', container, imageData);
-//   }
-// }
-
-      // // Update the display (you may need to adjust this based on your requirements)
-      // rgbContainer.innerHTML = `<img src="data:image/png;base64,${arrayToBase64(rgbImage)}"/>`;
-      // depthContainer.innerHTML = `<img src="data:image/png;base64,${arrayToBase64(depthImage)}"/>`;
 });
 
     // Utility function to convert array to base64 (adjust as needed)

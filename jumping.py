@@ -39,20 +39,6 @@ try:
         print(json.dumps(frames_data))
         sys.stdout.flush()
 
-        # Display RGB image
-        #cv2.imshow("RGB Image", color_image)
-
-        # Display Depth image
-        #depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-        #cv2.imshow("Depth Image", depth_colormap)
-
-        # Save RGB and Depth images
-        #cv2.imwrite("rgb_image.jpg", color_image)
-        #cv2.imwrite("depth_image.jpg", depth_colormap)
-
-        # Break the loop by pressing 'q'
-        #if cv2.waitKey(1) & 0xFF == ord('q'):
-        #    break
 
 finally:
     # Stop streaming

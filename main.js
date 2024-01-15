@@ -35,9 +35,9 @@ function createWindow() {
 
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
-
+  const pythonPath = 'C:\\Users\\TEST-USER\\.pyenv\\pyenv-win\\versions\\3.8.10\\python.exe'; // Correct Python path
   const pythonScriptPath = join(__dirname, 'jumping.py');
-  const pythonProcess = spawn('python', [pythonScriptPath]);
+  const pythonProcess = spawn(pythonPath, [pythonScriptPath]);
 
   pythonProcess.stdout.on('data', (data) => {
     try {
@@ -57,32 +57,6 @@ function createWindow() {
   pythonProcess.on('close', (code) => {
     console.log(`Python script finished with code ${code}`);
   });
-
-
-
-   // Run Python script using PythonShell
-   //const pythonScriptPath = join(__dirname, 'jumping.py');
-
-  //  exec(`python ${pythonScriptPath}`, (error, stdout, stderr) => {
-  //   if (error) {
-  //     console.error(`Error executing Python script: ${error.message}`);
-  //   } else {
-  //     console.log('Python script finished');
-  //   }
-  // });
-
-
-
-  // PythonShell.run('jumping.py', options, function (err) {
-  //   if (err) throw err;
-  //   console.log('Python script finished');
-  // });
-
-  // // Run Python script
-  // PythonShell.run('real_sense_capture.py', null, function (err) {
-  //   if (err) throw err;
-  //   console.log('Python script finished');
-  // });
 
 
 }
