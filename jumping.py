@@ -1,8 +1,9 @@
+import socket
 import cv2
 import numpy as np
+import base64
 import pyrealsense2 as rs
 import json
-import sys
 
 # Configure RealSense pipeline
 pipeline = rs.pipeline()
@@ -12,11 +13,18 @@ config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
 
 # Start streaming
 pipeline.start(config)
-frame_id = 0  # Initialize frame ID
+
+# Set up the socket server
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind(('localhost', 5002))  # Bind to localhost and port 12345
+server_socket.listen(1)  # Listen for connections (1 client)
+
+print("Waiting for a connection...")
+conn, addr = server_socket.accept()
+print(f"Connected to {addr}")
 
 try:
     while True:
-        # Wait for a coherent pair of frames: depth and color
         frames = pipeline.wait_for_frames()
         depth_frame = frames.get_depth_frame()
         color_frame = frames.get_color_frame()
@@ -24,23 +32,30 @@ try:
         if not depth_frame or not color_frame:
             continue
 
-        # Convert frames to numpy arrays
         depth_image = np.asanyarray(depth_frame.get_data())
         color_image = np.asanyarray(color_frame.get_data())
 
-        frame_id += 1
+        # Example: Convert an image to JPEG format and base64 encode
+        _, buffer = cv2.imencode('.jpg', color_image)  # Assuming color_image is a numpy array
+        jpeg_encoded = base64.b64encode(buffer).decode('utf-8')
+        
+        
+        _, buffer2 = cv2.imencode('.jpg', depth_image)  # Assuming color_image is a numpy array
+        jpeg_encoded2 = base64.b64encode(buffer2).decode('utf-8')
 
-         # Send frames to Electron.js
-        frames_data = {
-            'id': frame_id,
-            'rgb': color_image.tolist(),
-            'depth': depth_image.tolist()
-        }
-        print(json.dumps(frames_data))
-        sys.stdout.flush()
-
+        # Serialize and send the frame data
+        try:
+            frame_data = json.dumps({'rgb': jpeg_encoded, 'depth': jpeg_encoded2})
+            message = frame_data + "\n"  # Add the delimiter
+            # frame_data = {'rgb': color_image.tolist(), 'depth': depth_image.tolist()}
+            # message = json.dumps(frame_data).encode()
+            conn.sendall(message.encode())
+        except Exception as e:
+            print(f"Error sending data: {e}")
+            break
 
 finally:
-    # Stop streaming
     pipeline.stop()
-    cv2.destroyAllWindows()
+    conn.close()
+    server_socket.close()
+    print("Server closed")

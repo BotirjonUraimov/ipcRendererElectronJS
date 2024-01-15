@@ -1,13 +1,15 @@
-// main.js
-const { app, BrowserWindow, ipcMain   } = require("electron");
-const { PythonShell } = require('python-shell');
-
+const { app, BrowserWindow, ipcMain } = require("electron");
 const { join } = require("path");
-const { exec } = require("child_process");
-const {spawn} = require('child_process');
-const url = require('url');
+const { spawn } = require('child_process');
+const net = require('net');
 
 let mainWindow;
+let pythonProcess = null;
+let client = null;
+
+const pythonPath = 'C:\\Users\\TEST-USER\\.pyenv\\pyenv-win\\versions\\3.8.10\\python.exe'; // Correct Python path
+const pythonScriptPath = join(__dirname, 'jumping.py');
+pythonProcess = spawn(pythonPath, [pythonScriptPath]);
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -15,86 +17,69 @@ function createWindow() {
     height: 600,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false, // Add this line
-      preload: join(__dirname, "./preload.js"), // Add this line
+      contextIsolation: false,
+      preload: join(__dirname, "preload.js"),
     },
   });
 
-  mainWindow.loadFile("index.html");
+  mainWindow.loadFile(join(__dirname, "index.html"));
+  mainWindow.webContents.openDevTools();
 
-  mainWindow.on("closed", function () {
+  // Setup TCP client
+  const client = new net.Socket();
+  client.connect(5002, '127.0.0.1', () => {
+      console.log('Connected to Python server');
+  });
+
+  let buffer = '';
+
+  client.on('data', function(dataBuffer) {
+    buffer += dataBuffer.toString();
+    let messages = buffer.split('\n'); // Split using the delimiter
+    buffer = messages.pop();
+    
+    messages.forEach((message) => {
+        if (message) {
+            try {
+                const frameData = JSON.parse(message);
+                mainWindow.webContents.send('frame-data', frameData);
+            } catch (err) {
+                console.error('Error parsing data:', err.message);
+            }
+        }
+    });
+});
+
+  client.on('close', () => {
+    console.log('Connection closed');
+  });
+
+  // Setup Python process
+  // const pythonPath = 'C:\\Users\\TEST-USER\\.pyenv\\pyenv-win\\versions\\3.8.10\\python.exe';
+  // const pythonScriptPath = join(__dirname, 'jumping.py');
+  // const pythonProcess = spawn(pythonPath, [pythonScriptPath]);
+
+  // pythonProcess.stderr.on('data', (data) => {
+  //   console.error(`Error from Python script: ${data}`);
+  // });
+
+  // pythonProcess.on('close', (code) => {
+  //   console.log(`Python script exited with code ${code}`);
+  // });
+
+  mainWindow.on("closed", () => {
+    client.destroy(); // Close the TCP connection
+    pythonProcess.kill(); // Terminate Python process
     mainWindow = null;
   });
-
-   // Load the index.html file
- mainWindow.loadURL(url.format({
-  pathname: join(__dirname, './index.html'),
-  protocol: 'file:',
-  slashes: true
-}));
-
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
-  const pythonPath = 'C:\\Users\\TEST-USER\\.pyenv\\pyenv-win\\versions\\3.8.10\\python.exe'; // Correct Python path
-  const pythonScriptPath = join(__dirname, 'jumping.py');
-  const pythonProcess = spawn(pythonPath, [pythonScriptPath]);
-
-  pythonProcess.stdout.on('data', (data) => {
-    try {
-      const framesData = JSON.parse(data);
-      console.log('Received frames:', framesData);
-      mainWindow.webContents.send('frames', framesData);
-      console.log('Frames data sent successfully.');
-  } catch (parseError) {
-      console.error(parseError.message);
-  }
-  });
-
-  pythonProcess.stderr.on('data', (data) => {
-    console.error(`Error executing Python script: ${data}`);
-  });
-
-  pythonProcess.on('close', (code) => {
-    console.log(`Python script finished with code ${code}`);
-  });
-
-
 }
-
-
-
-  
 
 app.on("ready", createWindow);
 
-app.on("window-all-closed", function () {
+app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
-app.on("activate", function () {
-  if (mainWindow === null) createWindow();
-});
-
-// Add the following IPC handler
-ipcMain.handle("run-python-script", async (event, scriptPath) => {
-  return new Promise((resolve, reject) => {
-    exec(`python ${scriptPath}`, (error, stdout, stderr) => {
-      if (error) {
-        reject(error.message);
-      } else {
-        try {
-          const parsedData = JSON.parse(stdout);
-          resolve(parsedData);
-        } catch (parseError) {
-          reject(parseError.message);
-        }
-      }
-    });
-  });
-});
-
-// IPC to receive frames from Python
-ipcMain.on('frames', (event, framesData) => {
-  // Use framesData to update the display on your Electron.js app
-  console.log(framesData);
+app.on("activate", () => {
+  if (mainWindow === null) createWindow
 });

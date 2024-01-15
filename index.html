@@ -1,102 +1,70 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      http-equiv="Content-Security-Policy"
-      content="script-src 'self' 'unsafe-inline';"
-    />
-    <title>Your Electron App</title>
-  </head>
-  <body>
-    <h1>Hello from Electron!</h1>
-    <button onclick="runPythonScript()">get data from API by python </button>
-
-    <!-- Add a new div to display the Python script result -->
-    <div id="pythonScriptResult"></div>
-
-    <h1>RealSense Frames Display</h1>
-  <div id="rgb-container"></div>
-  <div id="depth-container"></div>
-
-
-
-
-    <script>
-
-const { ipcRenderer } = require('electron');
-
-// IPC to receive frames from Python
-ipcRenderer.on('frames', async (event, framesData) => {
-      // Update the display on your Electron.js app
-      const rgbContainer = document.getElementById('rgb-container');
-      const depthContainer = document.getElementById('depth-container');
-
-      // Assuming framesData has 'rgb' and 'depth' properties
-      if ('rgb' in framesData && 'depth' in framesData) {
-    // Assuming framesData has 'rgb' and 'depth' properties
-
-    const rgbImage = framesData.rgb;
-    const depthImage = framesData.depth;
-
-    console.log('RGB Image Data:', rgbImage);
-console.log('Depth Image Data:', depthImage)
-
-    // Update the display (you may need to adjust this based on your requirements)
-    try {
-      const rgbBase64 = await arrayToBase64(rgbImage);
-      const depthBase64 = await arrayToBase64(depthImage);
-
-      rgbContainer.innerHTML = `<img src="data:image/png;base64,${rgbBase64}"/>`;
-      depthContainer.innerHTML = `<img src="data:image/png;base64,${depthBase64}"/>`;
-    } catch (error) {
-      console.error('Error converting array to base64:', error);
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
+  <title>Your Electron App</title>
+  <style>
+    #rgb-container img, #depth-container img {
+      width: 100%;
+      height: auto;
     }
-  } else {
-    console.error('Invalid framesData. Expected properties: rgb, depth');
+  </style>
+</head>
+<body>
+  <h1>Hello from Electron!</h1>
+  <h2>RealSense Frames Display</h2>
+  <button id="start-server">Start Server</button>
+<button id="stop-server">Stop Server</button>
+  <div id="rgb-container">
+    <img id="rgb-image" src="" alt="RGB Frame">
+  </div>
+  <div id="depth-container">
+    <img id="depth-image" src="" alt="Depth Frame">
+  </div>
+  <button id="save-rgb">Save RGB Image</button>
+  <button id="save-depth">Save Depth Image</button>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const fs = require('fs');
+
+
+    function saveImage(dataUrl, filename) {
+    // Convert base64 to raw binary data held in a string
+    const base64Data = dataUrl.replace(/^data:image\/jpeg;base64,/, "");
+    
+    // Write the file to disk
+    fs.writeFile(filename, base64Data, 'base64', (err) => {
+      if (err) alert('Error saving the image: ' + err.message);
+      else alert('Image saved successfully!');
+    });
   }
 
+    ipcRenderer.on('frame-data', (event, frameData) => {
+      if (frameData.rgb) {
+        const rgbImage = document.getElementById('rgb-image');
+        rgbImage.src = `data:image/jpeg;base64,${frameData.rgb}`;
+
+}
+if (frameData.depth) {
+    const depthImage = document.getElementById('depth-image');
+    depthImage.src = `data:image/jpeg;base64,${frameData.depth}`;
+  }
 });
 
-    // Utility function to convert array to base64 (adjust as needed)
-    function arrayToBase64(array) {
-      return new Promise((resolve, reject) => {
-    // Convert the array to a PNG image (adjust this based on your image format)
-    // This is just a basic example; you may need to use a different method
-    const pngImage = new Uint8Array(array);
-    const blob = new Blob([pngImage], { type: 'image/png' });
-
-    // Convert the blob URL to base64
-    const reader = new FileReader();
-
-    reader.onloadend = function () {
-      const base64data = reader.result.split(',')[1];
-      resolve(base64data);
-    };
-
-    reader.readAsDataURL(blob);
+document.getElementById('save-rgb').addEventListener('click', () => {
+    const rgbImage = document.getElementById('rgb-image');
+    saveImage(rgbImage.src, 'rgb-image.jpg');
   });
-}
+
+  document.getElementById('save-depth').addEventListener('click', () => {
+    const depthImage = document.getElementById('depth-image');
+    saveImage(depthImage.src, 'depth-image.jpg');
+  });
 
 
 
-      // Add the following function
-      async function runPythonScript() {
-        try {
-          const result = await window.ipcRenderer.invoke(
-            "run-python-script",
-            "./teamylesium.py"
-          );
-          console.log(result);
-
-          // Display the Python script result on the UI
-          document.getElementById("pythonScriptResult").innerText =
-            JSON.stringify(result, null, 2);
-        } catch (error) {
-          console.error(error);
-        }
-      }
-    </script>
-  </body>
+</script>
+</body>
 </html>
