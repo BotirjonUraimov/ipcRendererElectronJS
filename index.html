@@ -63,6 +63,19 @@ document.getElementById('save-rgb').addEventListener('click', () => {
     saveImage(depthImage.src, 'depth-image.jpg');
   });
 
+  document.getElementById('start-server').addEventListener('click', () => {
+    ipcRenderer.send('start-server');
+  });
+
+
+  document.getElementById('stop-server').addEventListener('click', () => {
+    ipcRenderer.send('stop-server');
+  });
+
+  ipcRenderer.on('server-status', (event, status) => {
+    console.log('Server status:', status);
+    // Update UI based on server status
+  });
 
 
 </script>

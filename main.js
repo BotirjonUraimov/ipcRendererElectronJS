@@ -3,32 +3,38 @@ const { join } = require("path");
 const { spawn } = require('child_process');
 const net = require('net');
 
+
 let mainWindow;
 let pythonProcess = null;
 let client = null;
 
+function createPythonProcess() {
 const pythonPath = 'C:\\Users\\TEST-USER\\.pyenv\\pyenv-win\\versions\\3.8.10\\python.exe'; // Correct Python path
 const pythonScriptPath = join(__dirname, 'jumping.py');
 pythonProcess = spawn(pythonPath, [pythonScriptPath]);
 
-function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
-      preload: join(__dirname, "preload.js"),
-    },
+let retryInterval = 1000; // Retry every 2 seconds
+let maxRetries = 5;
+let retries = 0;
+
+  // Setup TCP client connection
+  function connectClient() {
+
+  client = new net.Socket();
+  client.connect(5002, '127.0.0.1', () => {
+    console.log('Connected to Python server');
+    mainWindow.webContents.send('server-status', 'connected');
+    retries = 0; // Reset retry count on successful connection
   });
 
-  mainWindow.loadFile(join(__dirname, "index.html"));
-  mainWindow.webContents.openDevTools();
-
-  // Setup TCP client
-  const client = new net.Socket();
-  client.connect(5002, '127.0.0.1', () => {
-      console.log('Connected to Python server');
+  client.on('error', (err) => {
+    console.error('Socket error:', err);
+    if (retries < maxRetries) {
+      setTimeout(connectClient, retryInterval);
+      retries++;
+    } else {
+      mainWindow.webContents.send('server-status', 'failed');
+    }
   });
 
   let buffer = '';
@@ -49,32 +55,68 @@ function createWindow() {
         }
     });
 });
+  
 
   client.on('close', () => {
     console.log('Connection closed');
+    mainWindow.webContents.send('server-status', 'disconnected');
+  });
+}
+
+
+connectClient(); // Initial attempt to connect
+
+  // Handle pythonProcess stdout, stderr, etc.
+}
+
+function killPythonProcess() {
+  if (client) {
+    client.destroy(); // Close the TCP connection
+    client = null;
+  }
+
+  if (pythonProcess) {
+    pythonProcess.kill();
+    pythonProcess = null;
+  }
+}
+
+
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      preload: join(__dirname, "preload.js"),
+    },
   });
 
-  // Setup Python process
-  // const pythonPath = 'C:\\Users\\TEST-USER\\.pyenv\\pyenv-win\\versions\\3.8.10\\python.exe';
-  // const pythonScriptPath = join(__dirname, 'jumping.py');
-  // const pythonProcess = spawn(pythonPath, [pythonScriptPath]);
+  mainWindow.loadFile(join(__dirname, "index.html"));
+  mainWindow.webContents.openDevTools();
 
-  // pythonProcess.stderr.on('data', (data) => {
-  //   console.error(`Error from Python script: ${data}`);
-  // });
-
-  // pythonProcess.on('close', (code) => {
-  //   console.log(`Python script exited with code ${code}`);
-  // });
 
   mainWindow.on("closed", () => {
-    client.destroy(); // Close the TCP connection
+    //client.destroy(); // Close the TCP connection
     pythonProcess.kill(); // Terminate Python process
     mainWindow = null;
   });
 }
 
+
+
 app.on("ready", createWindow);
+
+ipcMain.on('start-server', (event) => {
+createPythonProcess();
+});
+
+ipcMain.on('stop-server', (event) => {
+killPythonProcess();
+});
+
+
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
