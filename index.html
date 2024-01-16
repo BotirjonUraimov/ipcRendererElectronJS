@@ -5,23 +5,33 @@
   <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
   <title>Your Electron App</title>
   <style>
+       #container {
+      display: flex;
+      flex-direction: column;
+      height: auto;
+    }
     #rgb-container img, #depth-container img {
       width: 100%;
       height: auto;
+      transform: rotate(270deg);
     }
+ 
   </style>
 </head>
-<body>
+<body style="display: flex; flex-direction: column;">
   <h1>Hello from Electron!</h1>
   <h2>RealSense Frames Display</h2>
   <button id="start-server">Start Server</button>
 <button id="stop-server">Stop Server</button>
-  <div id="rgb-container">
-    <img id="rgb-image" src="" alt="RGB Frame">
+  <div id="container">
+    <div id="rgb-container">
+      <img id="rgb-image" src="" alt="RGB Frame">
+    </div>
+    <div id="depth-container">
+      <img id="depth-image" src="" alt="Depth Frame">
+    </div>
   </div>
-  <div id="depth-container">
-    <img id="depth-image" src="" alt="Depth Frame">
-  </div>
+
   <button id="save-rgb">Save RGB Image</button>
   <button id="save-depth">Save Depth Image</button>
 
@@ -54,13 +64,17 @@ if (frameData.depth) {
 });
 
 document.getElementById('save-rgb').addEventListener('click', () => {
-    const rgbImage = document.getElementById('rgb-image');
-    saveImage(rgbImage.src, 'rgb-image.jpg');
+  ipcRenderer.send('save-command', 'save_rgb');
+  alert('Image saved successfully!');
+    // const rgbImage = document.getElementById('rgb-image');
+    // saveImage(rgbImage.src, 'rgb-image.jpg');
   });
 
   document.getElementById('save-depth').addEventListener('click', () => {
-    const depthImage = document.getElementById('depth-image');
-    saveImage(depthImage.src, 'depth-image.jpg');
+    ipcRenderer.send('save-command', 'save_depth');
+    alert('Image saved successfully!');
+    // const depthImage = document.getElementById('depth-image');
+    // saveImage(depthImage.src, 'depth-image.jpg');
   });
 
   document.getElementById('start-server').addEventListener('click', () => {

@@ -116,7 +116,11 @@ ipcMain.on('stop-server', (event) => {
 killPythonProcess();
 });
 
-
+ipcMain.on('save-command', (event, command) => {
+  if (client) {
+    client.write(command);
+  }
+});
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();

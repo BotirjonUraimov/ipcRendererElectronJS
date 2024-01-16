@@ -4,12 +4,13 @@ import numpy as np
 import base64
 import pyrealsense2 as rs
 import json
+import os
 
 # Configure RealSense pipeline
 pipeline = rs.pipeline()
 config = rs.config()
-config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
+config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
 
 # Start streaming
 pipeline.start(config)
@@ -22,6 +23,10 @@ server_socket.listen(1)  # Listen for connections (1 client)
 print("Waiting for a connection...")
 conn, addr = server_socket.accept()
 print(f"Connected to {addr}")
+
+
+save_commands = {"save_rgb": False, "save_depth": False}
+
 
 try:
     while True:
@@ -43,6 +48,17 @@ try:
         _, buffer2 = cv2.imencode('.jpg', depth_image)  # Assuming color_image is a numpy array
         jpeg_encoded2 = base64.b64encode(buffer2).decode('utf-8')
 
+        # Check if save command is received
+        if save_commands["save_rgb"]:
+            cv2.imwrite('rgb-image.png', color_image)
+            save_commands["save_rgb"] = False
+
+        if save_commands["save_depth"]:
+            cv2.imwrite('depth-image.png', depth_image)
+            save_commands["save_depth"] = False
+
+   
+
         # Serialize and send the frame data
         try:
             frame_data = json.dumps({'rgb': jpeg_encoded, 'depth': jpeg_encoded2})
@@ -53,9 +69,17 @@ try:
         except Exception as e:
             print(f"Error sending data: {e}")
             break
-
+        
+        # Listen for commands from Electron app
+        try:
+            conn.settimeout(0.1)  # Non-blocking
+            command = conn.recv(1024).decode().strip()
+            if command:
+                save_commands[command] = True
+        except socket.timeout:
+            pass
 finally:
     pipeline.stop()
     conn.close()
-    server_socket.close()
+    #server_socket.close()
     print("Server closed")
