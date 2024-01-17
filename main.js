@@ -85,7 +85,7 @@ function killPythonProcess() {
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 800,
-    height: 600,
+    height: 1200,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,

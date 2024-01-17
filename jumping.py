@@ -5,6 +5,7 @@ import base64
 import pyrealsense2 as rs
 import json
 import os
+import time # Import the time module
 
 # Configure RealSense pipeline
 pipeline = rs.pipeline()
@@ -25,7 +26,55 @@ conn, addr = server_socket.accept()
 print(f"Connected to {addr}")
 
 
-save_commands = {"save_rgb": False, "save_depth": False}
+save_commands = {"front": False, "back": False, "side": False, 
+                 "rom_ha_left": False, "rom_ha_right": False, 
+                 "rom_hf_left": False, "rom_hf_right": False, 
+                 "rom_sa_left": False, "rom_sa_right": False, 
+                 "rom_sf_left": False, "rom_sf_right": False  }
+
+#body
+save_count_front = 0
+max_saves_front = 6
+
+save_count_back = 0
+max_saves_back = 7
+
+save_count_side = 0
+max_saves_side = 6
+
+#foot
+save_count_rom_ha_left = 0
+max_saves_rom_ha_left = 31
+
+save_count_rom_ha_right = 0
+max_saves_rom_ha_right = 50
+
+save_count_rom_hf_left = 0
+max_saves_rom_hf_left = 36
+
+save_count_rom_hf_right = 0
+max_saves_rom_hf_right = 51
+
+#hand
+save_count_rom_sa_left = 0
+max_saves_rom_sa_left = 85
+
+save_count_rom_sa_right = 0
+max_saves_rom_sa_right = 86
+
+save_count_rom_sf_left = 0
+max_saves_rom_sf_left = 81
+
+save_count_rom_sf_right = 0
+max_saves_rom_sf_right = 91
+
+save_count = 0
+max_saves = 6  # Maximum number of saves
+command_received_time = None
+
+# Create a new directory for saved images
+save_folder = "temp"
+os.makedirs(save_folder, exist_ok=True)
 
 
 try:
@@ -44,20 +93,8 @@ try:
         _, buffer = cv2.imencode('.jpg', color_image)  # Assuming color_image is a numpy array
         jpeg_encoded = base64.b64encode(buffer).decode('utf-8')
         
-        
         _, buffer2 = cv2.imencode('.jpg', depth_image)  # Assuming color_image is a numpy array
         jpeg_encoded2 = base64.b64encode(buffer2).decode('utf-8')
-
-        # Check if save command is received
-        if save_commands["save_rgb"]:
-            cv2.imwrite('rgb-image.png', color_image)
-            save_commands["save_rgb"] = False
-
-        if save_commands["save_depth"]:
-            cv2.imwrite('depth-image.png', depth_image)
-            save_commands["save_depth"] = False
-
-   
 
         # Serialize and send the frame data
         try:
@@ -76,8 +113,42 @@ try:
             command = conn.recv(1024).decode().strip()
             if command:
                 save_commands[command] = True
+                command_received_time = time.time()
         except socket.timeout:
             pass
+
+           # Check if save command is received and save_count is less than max_saves
+         # Check if save command is received and if 5 seconds have passed
+        current_time = time.time()
+        if (save_commands["front"]):
+            if current_time - command_received_time >= 5:
+                deep_folder = 'temp/front'
+                os.makedirs(deep_folder, exist_ok=True)
+                while save_count_front<max_saves_front:
+                    cv2.imwrite(os.path.join(deep_folder, f'rgb_{save_count_front:06}.png'), color_image)
+                    cv2.imwrite(os.path.join(deep_folder, f'depth_{save_count_front:06}.png'), depth_image)
+                    save_count_front += 1
+                    save_commands["front"] = False
+                    command_received_time = None
+                    if save_count_front >= max_saves_front:
+                        print("Max number of saves reached.")
+                    #break # Optional: Break the loop if max saves reached
+                        
+        #capturing back                
+        elif(save_commands["back"]):
+            if current_time - command_received_time >= 5:
+                deep_folder = 'temp/back'
+                os.makedirs(deep_folder, exist_ok=True)
+                while save_count_back<max_saves_back:
+                    cv2.imwrite(os.path.join(deep_folder, f'rgb_{save_count_back:06}.png'), color_image)
+                    cv2.imwrite(os.path.join(deep_folder, f'depth_{save_count_back:06}.png'), depth_image)
+                    save_count_back += 1
+                    save_commands["back"] = False
+                    command_received_time = None
+                    if save_count_back >= max_saves_back:
+                        print("Max number of saves reached.")
+                    #break # Optional: Break the loop if max saves reached
+
 finally:
     pipeline.stop()
     conn.close()

@@ -13,13 +13,13 @@
     #rgb-container img, #depth-container img {
       width: 100%;
       height: auto;
-      transform: rotate(270deg);
+      
     }
  
   </style>
 </head>
 <body style="display: flex; flex-direction: column;">
-  <h1>Hello from Electron!</h1>
+
   <h2>RealSense Frames Display</h2>
   <button id="start-server">Start Server</button>
 <button id="stop-server">Stop Server</button>
@@ -32,8 +32,23 @@
     </div>
   </div>
 
-  <button id="save-rgb">Save RGB Image</button>
-  <button id="save-depth">Save Depth Image</button>
+ 
+  <button id="front">Front</button>
+
+  <button id="back">For Back</button>
+  <button id="side">For Side</button>
+
+  <button id="rom_ha_left">rom_ha_left</button>
+  <button id="rom_ha_right">rom_ha_right</button>
+  <button id="rom_hf_left">rom_hf_left</button>
+  <button id="rom_hf_right">rom_hf_right</button>
+
+  <button id="rom_sa_left">rom_sa_left</button>
+  <button id="rom_sa_right">rom_sa_right</button>
+  <button id="rom_sf_left">rom_sf_left</button>
+  <button id="rom_sf_right">rom_sf_right</button>
+
+
 
   <script>
     const { ipcRenderer } = require('electron');
@@ -63,32 +78,79 @@ if (frameData.depth) {
   }
 });
 
-document.getElementById('save-rgb').addEventListener('click', () => {
-  ipcRenderer.send('save-command', 'save_rgb');
+// button for front
+document.getElementById('front').addEventListener('click', () => {
+  ipcRenderer.send('save-command', 'front');
   alert('Image saved successfully!');
-    // const rgbImage = document.getElementById('rgb-image');
-    // saveImage(rgbImage.src, 'rgb-image.jpg');
   });
 
-  document.getElementById('save-depth').addEventListener('click', () => {
-    ipcRenderer.send('save-command', 'save_depth');
-    alert('Image saved successfully!');
-    // const depthImage = document.getElementById('depth-image');
-    // saveImage(depthImage.src, 'depth-image.jpg');
+// button for back
+  document.getElementById('back').addEventListener('click', () => {
+  ipcRenderer.send('save-command', 'back');
+  alert('Image saved successfully!');
   });
 
+// button for side
+  document.getElementById('side').addEventListener('click', () => {
+  ipcRenderer.send('save-command', 'side');
+  alert('Image saved successfully!');
+  });
+  
+// button for rom by foot
+  document.getElementById('rom_ha_left').addEventListener('click', () => {
+  ipcRenderer.send('save-command', 'rom_ha_left');
+  alert('Image saved successfully!');
+  });
+
+  document.getElementById('rom_ha_right').addEventListener('click', () => {
+  ipcRenderer.send('save-command', 'rom_ha_right');
+  alert('Image saved successfully!');
+  });
+
+  document.getElementById('rom_hf_left').addEventListener('click', () => {
+  ipcRenderer.send('save-command', 'rom_hf_left');
+  alert('Image saved successfully!');
+  });
+
+  document.getElementById('rom_hf_right').addEventListener('click', () => {
+  ipcRenderer.send('save-command', 'rom_hf_right');
+  alert('Image saved successfully!');
+  });
+
+  // button for rom by hand
+  document.getElementById('rom_sa_left').addEventListener('click', () => {
+  ipcRenderer.send('save-command', 'rom_sa_left');
+  alert('Image saved successfully!');
+  });
+
+  document.getElementById('rom_sa_right').addEventListener('click', () => {
+  ipcRenderer.send('save-command', 'front');
+  alert('Image saved successfully!');
+
+  });
+document.getElementById('rom_sf_left').addEventListener('click', () => {
+  ipcRenderer.send('save-command', 'front');
+  alert('Image saved successfully!');
+  });
+
+document.getElementById('rom_sf_right').addEventListener('click', () => {
+  ipcRenderer.send('save-command', 'front');
+  alert('Image saved successfully!');
+  });
+
+//running socket server 
   document.getElementById('start-server').addEventListener('click', () => {
     ipcRenderer.send('start-server');
   });
 
-
+//stop socket server
   document.getElementById('stop-server').addEventListener('click', () => {
     ipcRenderer.send('stop-server');
   });
 
   ipcRenderer.on('server-status', (event, status) => {
     console.log('Server status:', status);
-    // Update UI based on server status
+    // for Update UI based on server status
   });
 
 
