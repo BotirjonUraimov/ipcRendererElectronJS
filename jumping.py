@@ -70,16 +70,27 @@ max_saves_rom_sf_right = 91
 
 save_count = 0
 max_saves = 6  # Maximum number of saves
-command_received_time = None
+
 
 # Create a new directory for saved images
-save_folder = "temp"
-os.makedirs(save_folder, exist_ok=True)
+# save_folder = "temp"
+# os.makedirs(save_folder, exist_ok=True)
 
-# def saving_image(command):
-#      if (save_commands['{command}']):
-    
 
+def saving_image(command, initial, max, color_image, depth_image):
+     global command_received_time
+
+     current_time = time.time()
+     if (save_commands[command]):
+         if current_time - command_received_time >= 5:
+             deep_folder = 'temp/'+ command
+             os.makedirs(deep_folder, exist_ok=True)
+             while initial<max:
+                 cv2.imwrite(os.path.join(deep_folder, f'rgb_{initial:06}.png'), color_image)
+                 cv2.imwrite(os.path.join(deep_folder, f'depth_{initial:06}.png'), depth_image)
+                 initial += 1
+                 save_commands[command] = False
+                 command_received_time = None
 
 
 try:
@@ -124,50 +135,42 @@ try:
 
            # Check if save command is received and save_count is less than max_saves
          # Check if save command is received and if 5 seconds have passed
-        current_time = time.time()
+        
+
         if (save_commands["front"]):
-            if current_time - command_received_time >= 5:
-                deep_folder = 'temp/front'
-                os.makedirs(deep_folder, exist_ok=True)
-                while save_count_front<max_saves_front:
-                    cv2.imwrite(os.path.join(deep_folder, f'rgb_{save_count_front:06}.png'), color_image)
-                    cv2.imwrite(os.path.join(deep_folder, f'depth_{save_count_front:06}.png'), depth_image)
-                    save_count_front += 1
-                    save_commands["front"] = False
-                    command_received_time = None
-                    if save_count_front >= max_saves_front:
-                        print("Max number of saves reached.")
-                    #break # Optional: Break the loop if max saves reached
-                        
-        #capturing back                
+            saving_image('front', save_count_front, max_saves_front, color_image, depth_image)
+
         elif(save_commands["back"]):
-            if current_time - command_received_time >= 5:
-                deep_folder = 'temp/back'
-                os.makedirs(deep_folder, exist_ok=True)
-                while save_count_back<max_saves_back:
-                    cv2.imwrite(os.path.join(deep_folder, f'rgb_{save_count_back:06}.png'), color_image)
-                    cv2.imwrite(os.path.join(deep_folder, f'depth_{save_count_back:06}.png'), depth_image)
-                    save_count_back += 1
-                    save_commands["back"] = False
-                    command_received_time = None
-                    if save_count_back >= max_saves_back:
-                        print("Max number of saves reached.")
-                    #break # Optional: Break the loop if max saves reached
-                        
-         #capturing back                
+            saving_image('back', save_count_back, max_saves_back, color_image, depth_image)
+
         elif(save_commands["side"]):
-            if current_time - command_received_time >= 5:
-                deep_folder = 'temp/side'
-                os.makedirs(deep_folder, exist_ok=True)
-                while save_count_side<max_saves_side:
-                    cv2.imwrite(os.path.join(deep_folder, f'rgb_{save_count_side:06}.png'), color_image)
-                    cv2.imwrite(os.path.join(deep_folder, f'depth_{save_count_side:06}.png'), depth_image)
-                    save_count_side += 1
-                    save_commands["side"] = False
-                    command_received_time = None
-                    if save_count_side >= max_saves_side:
-                        print("Max number of saves reached.")
-                    #break # Optional: Break the loop if max saves reached
+            saving_image('side', save_count_side, max_saves_side, color_image, depth_image)
+
+        elif(save_commands["rom_ha_left"]):
+            saving_image('rom_ha_left', save_count_rom_ha_left, max_saves_rom_ha_left, color_image, depth_image)
+
+        elif(save_commands["rom_ha_right"]):
+            saving_image('rom_ha_right', save_count_rom_ha_right, max_saves_rom_ha_right, color_image, depth_image)
+
+        elif(save_commands["rom_hf_left"]):
+            saving_image('rom_hf_left', save_count_rom_hf_left, max_saves_rom_hf_left, color_image, depth_image)
+
+        elif(save_commands["rom_hf_right"]):
+            saving_image('rom_hf_right', save_count_rom_hf_right, max_saves_rom_hf_right, color_image, depth_image)
+
+        elif(save_commands["rom_sa_left"]):
+            saving_image('rom_sa_left', save_count_rom_sa_left, max_saves_rom_sa_left, color_image, depth_image)
+
+        elif(save_commands["rom_sa_right"]):
+            saving_image('rom_sa_right', save_count_rom_sa_right, max_saves_rom_sa_right, color_image, depth_image)
+
+        elif(save_commands["rom_sf_left"]):
+            saving_image('rom_sf_left', save_count_rom_sf_left, max_saves_rom_sf_left, color_image, depth_image)        
+
+        elif(save_commands["rom_sf_right"]):
+            saving_image('rom_sf_right', save_count_rom_sf_right, max_saves_rom_sf_right, color_image, depth_image)
+
+    
 
 finally:
     pipeline.stop()
