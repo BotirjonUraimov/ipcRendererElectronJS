@@ -76,6 +76,11 @@ command_received_time = None
 save_folder = "temp"
 os.makedirs(save_folder, exist_ok=True)
 
+# def saving_image(command):
+#      if (save_commands['{command}']):
+    
+
+
 
 try:
     while True:
@@ -146,6 +151,21 @@ try:
                     save_commands["back"] = False
                     command_received_time = None
                     if save_count_back >= max_saves_back:
+                        print("Max number of saves reached.")
+                    #break # Optional: Break the loop if max saves reached
+                        
+         #capturing back                
+        elif(save_commands["side"]):
+            if current_time - command_received_time >= 5:
+                deep_folder = 'temp/side'
+                os.makedirs(deep_folder, exist_ok=True)
+                while save_count_side<max_saves_side:
+                    cv2.imwrite(os.path.join(deep_folder, f'rgb_{save_count_side:06}.png'), color_image)
+                    cv2.imwrite(os.path.join(deep_folder, f'depth_{save_count_side:06}.png'), depth_image)
+                    save_count_side += 1
+                    save_commands["side"] = False
+                    command_received_time = None
+                    if save_count_side >= max_saves_side:
                         print("Max number of saves reached.")
                     #break # Optional: Break the loop if max saves reached
 
