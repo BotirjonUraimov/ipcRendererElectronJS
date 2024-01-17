@@ -2,19 +2,19 @@ import socket
 import cv2
 import numpy as np
 import base64
-import pyrealsense2 as rs
+#import pyrealsense2 as rs
 import json
 import os
 import time # Import the time module
 
 # Configure RealSense pipeline
-pipeline = rs.pipeline()
-config = rs.config()
-config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
-config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+# pipeline = rs.pipeline()
+# config = rs.config()
+# config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
+# config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
 
 # Start streaming
-pipeline.start(config)
+# pipeline.start(config)
 
 # Set up the socket server
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -71,6 +71,9 @@ max_saves_rom_sf_right = 91
 save_count = 0
 max_saves = 6  # Maximum number of saves
 
+# Open webcam
+webcam = cv2.VideoCapture(0)  # Use 0 for the default camera
+
 
 # Create a new directory for saved images
 # save_folder = "temp"
@@ -95,15 +98,19 @@ def saving_image(command, initial, max, color_image, depth_image):
 
 try:
     while True:
-        frames = pipeline.wait_for_frames()
-        depth_frame = frames.get_depth_frame()
-        color_frame = frames.get_color_frame()
+        # frames = pipeline.wait_for_frames()
+        # depth_frame = frames.get_depth_frame()
+        # color_frame = frames.get_color_frame()
+        ret, color_image = webcam.read()  # Read frame from webcam
+        ret, depth_image = webcam.read()
 
-        if not depth_frame or not color_frame:
+        # if not depth_frame or not color_frame:
+        #     continue
+        if not ret:
             continue
 
-        depth_image = np.asanyarray(depth_frame.get_data())
-        color_image = np.asanyarray(color_frame.get_data())
+        # depth_image = np.asanyarray(depth_frame.get_data())
+        # color_image = np.asanyarray(color_frame.get_data())
 
         # Example: Convert an image to JPEG format and base64 encode
         _, buffer = cv2.imencode('.jpg', color_image)  # Assuming color_image is a numpy array
@@ -173,7 +180,8 @@ try:
     
 
 finally:
-    pipeline.stop()
+    webcam.release()
+    # pipeline.stop()
     conn.close()
     #server_socket.close()
     print("Server closed")
