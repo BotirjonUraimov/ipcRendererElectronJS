@@ -43,30 +43,47 @@ save_count_side = 0
 max_saves_side = 6
 
 #foot
+#left foot to side start:10s duration: 8s 
 save_count_rom_ha_left = 0
-max_saves_rom_ha_left = 31
+#max_saves_rom_ha_left = 31
+duration_rom_ha_left = 8
 
+#right foot to side start:10s duration: 8s 
 save_count_rom_ha_right = 0
-max_saves_rom_ha_right = 50
+#max_saves_rom_ha_right = 50
+duration_rom_ha_right = 8
 
+#left foot to front start:10s duration: 8s 
 save_count_rom_hf_left = 0
-max_saves_rom_hf_left = 36
+#max_saves_rom_hf_left = 36
+duration_rom_hf_left = 8
 
+#right foot to front start:10s duration: 8s 
 save_count_rom_hf_right = 0
-max_saves_rom_hf_right = 51
+#max_saves_rom_hf_right = 51
+duration_rom_hf_right = 8
 
 #hand
+# left hand to side start:10s duration: 10s 
 save_count_rom_sa_left = 0
-max_saves_rom_sa_left = 85
+#max_saves_rom_sa_left = 85
+duration_rom_sa_left = 10
 
+
+# right hand to side start:10s duration: 10s 
 save_count_rom_sa_right = 0
-max_saves_rom_sa_right = 86
+#max_saves_rom_sa_right = 86
+duration_rom_sa_right = 10
 
-save_count_rom_sf_left = 0
-max_saves_rom_sf_left = 81
+# left hand to front start:10s duration: 10s 
+save_count_rom_sf_left = 0 
+#max_saves_rom_sf_left = 81
+duration_rom_sf_left = 10
 
+# right hand to front start:10s duration: 10s
 save_count_rom_sf_right = 0
-max_saves_rom_sf_right = 91
+# max_saves_rom_sf_right = 91
+duration_rom_sa_right = 10
 
 save_count = 0
 max_saves = 6  # Maximum number of saves
@@ -82,7 +99,7 @@ def saving_image(command, initial, max, color_image, depth_image):
 
     current_time = time.time()
     if save_commands[command] and command_received_time[command] is not None:
-        if save_commands[command] and current_time - command_received_time[command] >= 5:
+        if save_commands[command] and current_time - command_received_time[command] >= 10:
             deep_folder = 'temp/' + command
             os.makedirs(deep_folder, exist_ok=True)
             filename = os.path.join(deep_folder, f'rgb-{initial:06}.png')
