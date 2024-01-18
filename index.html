@@ -124,17 +124,17 @@ document.getElementById('front').addEventListener('click', () => {
   });
 
   document.getElementById('rom_sa_right').addEventListener('click', () => {
-  ipcRenderer.send('save-command', 'front');
+  ipcRenderer.send('save-command', 'rom_sa_right');
   alert('Image saved successfully!');
-
   });
+  
 document.getElementById('rom_sf_left').addEventListener('click', () => {
-  ipcRenderer.send('save-command', 'front');
+  ipcRenderer.send('save-command', 'rom_sf_left');
   alert('Image saved successfully!');
   });
 
 document.getElementById('rom_sf_right').addEventListener('click', () => {
-  ipcRenderer.send('save-command', 'front');
+  ipcRenderer.send('save-command', 'rom_sf_right');
   alert('Image saved successfully!');
   });
 
@@ -142,7 +142,7 @@ document.getElementById('rom_sf_right').addEventListener('click', () => {
   document.getElementById('start-server').addEventListener('click', () => {
     ipcRenderer.send('start-server');
   });
-
+ 
 //stop socket server
   document.getElementById('stop-server').addEventListener('click', () => {
     ipcRenderer.send('stop-server');
