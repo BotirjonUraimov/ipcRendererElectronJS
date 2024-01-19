@@ -25,7 +25,7 @@ print("Waiting for a connection...")
 conn, addr = server_socket.accept()
 print(f"Connected to {addr}")
 
-
+is_streaming = False
 save_commands = {"front": False, "back": False, "side": False, 
                  "rom_ha_left": False, "rom_ha_right": False, 
                  "rom_hf_left": False, "rom_hf_right": False, 
@@ -107,6 +107,31 @@ waiting_rom_sf_right = 10
 command_received_time = {cmd: None for cmd in save_commands}
 capture_counters = {cmd: 0 for cmd in save_commands}
 
+
+# def crop_vertical(img):
+#     height, width = img.shape[:2]
+#     startx = width // 2 - 360 
+#     cropped_img = img[0:720, startx:startx + 720]
+#     return cropped_img
+
+def crop_vertical(img):
+    # Original dimensions
+    original_height, original_width = img.shape[:2]
+
+    # New width for the crop
+    new_width = 405
+
+    # Calculate the starting x coordinate for cropping
+    startx = original_width // 2 - new_width // 2 
+    
+    # Crop the image to 405 (width) x 720 (height)
+    cropped_img = img[0:720, startx:startx + new_width]
+
+    return cropped_img
+
+
+
+
 def saving_image(command, color_image, depth_image, duration, waiting_time):
     global save_commands, command_received_time, capture_counters
 
@@ -121,11 +146,18 @@ def saving_image(command, color_image, depth_image, duration, waiting_time):
                 deep_folder = 'temp/' + command
                 os.makedirs(deep_folder, exist_ok=True)
                 counter = capture_counters[command]
+
                 # timestamp = int(elapsed_time * 1000)  # Convert to milliseconds
                 filename = os.path.join(deep_folder, f'rgb-{counter:06}.png')
-                cv2.imwrite(filename, color_image)
+                cropped_color_image = crop_vertical(color_image)
+                #resized_color_image = cv2.resize(color_image, (720, 1280))
+                cv2.imwrite(filename, cropped_color_image)
+
                 filename = os.path.join(deep_folder, f'depth-{counter:06}.png')
-                cv2.imwrite(filename, depth_image)
+                cropped_depth_image = crop_vertical(depth_image)
+                #resized_depth_image = cv2.resize(depth_image, (720, 1280))
+                cv2.imwrite(filename, cropped_depth_image)
+
                 capture_counters[command] += 1 
             else:
                 # End of the duration
@@ -133,6 +165,9 @@ def saving_image(command, color_image, depth_image, duration, waiting_time):
                 command_received_time[command] = None
                 capture_counters[command] = 0  # Reset the counter
     return  save_commands[command]
+
+
+
 
 try:
     while True:
@@ -154,19 +189,32 @@ try:
         jpeg_encoded2 = base64.b64encode(buffer2).decode('utf-8')
 
         # Serialize and send the frame data
-        try:
-            frame_data = json.dumps({'rgb': jpeg_encoded, 'depth': jpeg_encoded2})
-            message = frame_data + "\n"  # Add the delimiter
-            conn.sendall(message.encode())
-        except Exception as e:
-            print(f"Error sending data: {e}")
-            break
+        # try:
+        #     frame_data = json.dumps({'rgb': jpeg_encoded, 'depth': jpeg_encoded2})
+        #     message = frame_data + "\n"  # Add the delimiter
+        #     conn.sendall(message.encode())
+        # except Exception as e:
+        #     print(f"Error sending data: {e}")
+        #     break
+
+        if is_streaming:
+            try:
+                frame_data = json.dumps({'rgb': jpeg_encoded, 'depth': jpeg_encoded2})
+                message = frame_data + "\n"  # Add the delimiter
+                conn.sendall((frame_data + "\n").encode())
+            except Exception as e:
+                print(f"Error sending data: {e}")
+
         
         # Listen for commands from Electron app
         try:
             conn.settimeout(0.1)  # Non-blocking
             command = conn.recv(1024).decode().strip()
-            if command in save_commands:
+            if command == "start-stream":
+                is_streaming = True
+            elif command == "stop-stream":
+                is_streaming = False
+            elif command in save_commands:
                 save_commands[command] = True
                 command_received_time[command] = time.time()
         except socket.timeout:

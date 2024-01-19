@@ -135,17 +135,21 @@ document.getElementById('rom_sf_left').addEventListener('click', () => {
 
 document.getElementById('rom_sf_right').addEventListener('click', () => {
   ipcRenderer.send('save-command', 'rom_sf_right');
+
   alert('Image saved successfully!');
   });
 
 //running socket server 
   document.getElementById('start-server').addEventListener('click', () => {
-    ipcRenderer.send('start-server');
+    //ipcRenderer.send('start-server');
+    ipcRenderer.send('save-command', 'start-stream');
   });
  
 //stop socket server
   document.getElementById('stop-server').addEventListener('click', () => {
-    ipcRenderer.send('stop-server');
+    //ipcRenderer.send('stop-server');
+    ipcRenderer.send('save-command', 'stop-stream');
+
   });
 
   ipcRenderer.on('server-status', (event, status) => {
