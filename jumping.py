@@ -34,83 +34,105 @@ save_commands = {"front": False, "back": False, "side": False,
 
 #body
 save_count_front = 0
+duration_front = 2
 max_saves_front = 6
+waiting_front = 5
 
 save_count_back = 0
+duration_back = 2
 max_saves_back = 7
+waiting_back = 5
+
 
 save_count_side = 0
+duration_side = 2
 max_saves_side = 6
+waiting_side = 5
+
 
 #foot
 #left foot to side start:10s duration: 8s 
 save_count_rom_ha_left = 0
-#max_saves_rom_ha_left = 31
+max_saves_rom_ha_left = 31
 duration_rom_ha_left = 8
+waiting_rom_ha_left = 10
+
 
 #right foot to side start:10s duration: 8s 
 save_count_rom_ha_right = 0
-#max_saves_rom_ha_right = 50
+max_saves_rom_ha_right = 50
 duration_rom_ha_right = 8
+waiting_rom_ha_right = 8
+
 
 #left foot to front start:10s duration: 8s 
 save_count_rom_hf_left = 0
-#max_saves_rom_hf_left = 36
+max_saves_rom_hf_left = 36
 duration_rom_hf_left = 8
+waiting_rom_hf_left = 10
+
 
 #right foot to front start:10s duration: 8s 
 save_count_rom_hf_right = 0
-#max_saves_rom_hf_right = 51
+max_saves_rom_hf_right = 51
 duration_rom_hf_right = 8
+waiting_rom_hf_right = 8
 
 #hand
 # left hand to side start:10s duration: 10s 
 save_count_rom_sa_left = 0
-#max_saves_rom_sa_left = 85
+max_saves_rom_sa_left = 85
 duration_rom_sa_left = 10
+waiting_rom_sa_left = 10
 
 
 # right hand to side start:10s duration: 10s 
 save_count_rom_sa_right = 0
-#max_saves_rom_sa_right = 86
+max_saves_rom_sa_right = 86
 duration_rom_sa_right = 10
+waiting_rom_sa_right = 10
 
 # left hand to front start:10s duration: 10s 
 save_count_rom_sf_left = 0 
-#max_saves_rom_sf_left = 81
+max_saves_rom_sf_left = 81
 duration_rom_sf_left = 10
+waiting_rom_sf_left = 10
 
 # right hand to front start:10s duration: 10s
 save_count_rom_sf_right = 0
-# max_saves_rom_sf_right = 91
-duration_rom_sa_right = 10
+max_saves_rom_sf_right = 91
+duration_rom_sf_right = 10
+waiting_rom_sf_right = 10
 
-save_count = 0
-max_saves = 6  # Maximum number of saves
-
-
-# Create a new directory for saved images
-# save_folder = "temp"
-# os.makedirs(save_folder, exist_ok=True)
 command_received_time = {cmd: None for cmd in save_commands}
+capture_counters = {cmd: 0 for cmd in save_commands}
 
-def saving_image(command, initial, max, color_image, depth_image):
-    global save_commands, command_received_time
+def saving_image(command, color_image, depth_image, duration, waiting_time):
+    global save_commands, command_received_time, capture_counters
 
     current_time = time.time()
     if save_commands[command] and command_received_time[command] is not None:
-        if save_commands[command] and current_time - command_received_time[command] >= 10:
-            deep_folder = 'temp/' + command
-            os.makedirs(deep_folder, exist_ok=True)
-            filename = os.path.join(deep_folder, f'rgb-{initial:06}.png')
-            cv2.imwrite(filename, color_image)
-            filename = os.path.join(deep_folder, f'depth-{initial:06}.png')
-            cv2.imwrite(filename, depth_image)
-            initial += 1
-            if initial >= max:
-                save_commands[command] = False  # Reset the save command
-                command_received_time[command] = None  # Reset the command time
-    return initial  # Return the updated save count
+        time_since_command_received = current_time - command_received_time[command]
+
+        # Check if waiting time has elapsed
+        if time_since_command_received >= waiting_time:
+            elapsed_time = time_since_command_received - waiting_time
+            if elapsed_time <= duration:
+                deep_folder = 'temp/' + command
+                os.makedirs(deep_folder, exist_ok=True)
+                counter = capture_counters[command]
+                # timestamp = int(elapsed_time * 1000)  # Convert to milliseconds
+                filename = os.path.join(deep_folder, f'rgb-{counter:06}.png')
+                cv2.imwrite(filename, color_image)
+                filename = os.path.join(deep_folder, f'depth-{counter:06}.png')
+                cv2.imwrite(filename, depth_image)
+                capture_counters[command] += 1 
+            else:
+                # End of the duration
+                save_commands[command] = False
+                command_received_time[command] = None
+                capture_counters[command] = 0  # Reset the counter
+    return  save_commands[command]
 
 try:
     while True:
@@ -135,8 +157,6 @@ try:
         try:
             frame_data = json.dumps({'rgb': jpeg_encoded, 'depth': jpeg_encoded2})
             message = frame_data + "\n"  # Add the delimiter
-            # frame_data = {'rgb': color_image.tolist(), 'depth': depth_image.tolist()}
-            # message = json.dumps(frame_data).encode()
             conn.sendall(message.encode())
         except Exception as e:
             print(f"Error sending data: {e}")
@@ -154,9 +174,12 @@ try:
 
         for command in save_commands:
             if save_commands[command]:
-                globals()[f"save_count_{command}"] = saving_image(
-                    command, globals()[f"save_count_{command}"], 
-                    globals()[f"max_saves_{command}"], color_image, depth_image)
+                duration = globals()[f"duration_{command}"]
+                waiting_time = globals()[f"waiting_{command}"]
+                still_capturing = saving_image(command, color_image, depth_image, duration, waiting_time)
+                if not still_capturing:
+                    # Perform any cleanup or post-processing if needed
+                    pass
                 
 finally:
     pipeline.stop()
