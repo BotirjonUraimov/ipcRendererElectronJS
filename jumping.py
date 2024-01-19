@@ -3,34 +3,30 @@ import cv2
 import numpy as np
 import base64
 import pyrealsense2 as rs
+import threading
 import json
 import os
 import time # Import the time module
 
 # Configure RealSense pipeline
-pipeline = rs.pipeline()
-config = rs.config()
-config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
-config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
 
-# Start streaming
-pipeline.start(config)
 
 # Set up the socket server
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_socket.bind(('localhost', 5002))  # Bind to localhost and port 12345
-server_socket.listen(1)  # Listen for connections (1 client)
+# server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# server_socket.bind(('localhost', 5002))  # Bind to localhost and port 12345
+# server_socket.listen(1)  # Listen for connections (1 client)
 
-print("Waiting for a connection...")
-conn, addr = server_socket.accept()
-print(f"Connected to {addr}")
+# print("Waiting for a connection...")
+# conn, addr = server_socket.accept()
+# print(f"Connected to {addr}")
 
 is_streaming = False
 save_commands = {"front": False, "back": False, "side": False, 
                  "rom_ha_left": False, "rom_ha_right": False, 
                  "rom_hf_left": False, "rom_hf_right": False, 
                  "rom_sa_left": False, "rom_sa_right": False, 
-                 "rom_sf_left": False, "rom_sf_right": False  }
+                 "rom_sf_left": False, "rom_sf_right": False, 
+                 "start-stream": False, "stop-stream": False  }
 
 #body
 save_count_front = 0
@@ -107,13 +103,6 @@ waiting_rom_sf_right = 10
 command_received_time = {cmd: None for cmd in save_commands}
 capture_counters = {cmd: 0 for cmd in save_commands}
 
-
-# def crop_vertical(img):
-#     height, width = img.shape[:2]
-#     startx = width // 2 - 360 
-#     cropped_img = img[0:720, startx:startx + 720]
-#     return cropped_img
-
 def crop_vertical(img):
     # Original dimensions
     original_height, original_width = img.shape[:2]
@@ -128,8 +117,6 @@ def crop_vertical(img):
     cropped_img = img[0:720, startx:startx + new_width]
 
     return cropped_img
-
-
 
 
 def saving_image(command, color_image, depth_image, duration, waiting_time):
@@ -169,68 +156,89 @@ def saving_image(command, color_image, depth_image, duration, waiting_time):
 
 
 
-try:
-    while True:
-        frames = pipeline.wait_for_frames()
-        depth_frame = frames.get_depth_frame()
-        color_frame = frames.get_color_frame()
+def handle_client_connection(client_socket):
+    global is_streaming, save_commands
 
-        if not depth_frame or not color_frame:
-            continue
+    
 
-        depth_image = np.asanyarray(depth_frame.get_data())
-        color_image = np.asanyarray(color_frame.get_data())
-
-        # Example: Convert an image to JPEG format and base64 encode
-        _, buffer = cv2.imencode('.jpg', crop_vertical(color_image))  # Assuming color_image is a numpy array
-        jpeg_encoded = base64.b64encode(buffer).decode('utf-8')
-        
-        _, buffer2 = cv2.imencode('.jpg', crop_vertical(depth_image))  # Assuming color_image is a numpy array
-        jpeg_encoded2 = base64.b64encode(buffer2).decode('utf-8')
-
-        # Serialize and send the frame data
-        # try:
-        #     frame_data = json.dumps({'rgb': jpeg_encoded, 'depth': jpeg_encoded2})
-        #     message = frame_data + "\n"  # Add the delimiter
-        #     conn.sendall(message.encode())
-        # except Exception as e:
-        #     print(f"Error sending data: {e}")
-        #     break
-
-        if is_streaming:
+    try:
+        while True:
             try:
-                frame_data = json.dumps({'rgb': jpeg_encoded, 'depth': jpeg_encoded2})
-                message = frame_data + "\n"  # Add the delimiter
-                conn.sendall((frame_data + "\n").encode())
-            except Exception as e:
-                print(f"Error sending data: {e}")
+                client_socket.settimeout(0.1)  # Set timeout for non-blocking recv
+                command = client_socket.recv(1024).decode().strip()
 
-        
-        # Listen for commands from Electron app
-        try:
-            conn.settimeout(0.1)  # Non-blocking
-            command = conn.recv(1024).decode().strip()
-            if command == "start-stream":
-                is_streaming = True
-            elif command == "stop-stream":
-                is_streaming = False
-            elif command in save_commands:
-                save_commands[command] = True
-                command_received_time[command] = time.time()
-        except socket.timeout:
-            pass
+                if command == "start-stream":
+                    is_streaming = True
+                    print("Streaming started.")
 
-        for command in save_commands:
-            if save_commands[command]:
-                duration = globals()[f"duration_{command}"]
-                waiting_time = globals()[f"waiting_{command}"]
-                still_capturing = saving_image(command, color_image, depth_image, duration, waiting_time)
-                if not still_capturing:
-                    # Perform any cleanup or post-processing if needed
-                    pass
-                
-finally:
-    pipeline.stop()
-    conn.close()
-    #server_socket.close()
-    print("Server closed")
+                elif command == "stop-stream":
+                    is_streaming = False
+                    print("Streaming stopped.")
+
+                elif command in save_commands:
+                    save_commands[command] = True
+                    command_received_time[command] = time.time()
+
+            except socket.timeout:
+                # Handle timeout, which means no command was received
+                pass
+
+            # Stream and/or save frames if applicable
+            if is_streaming or any(save_commands.values()):
+                pipeline = rs.pipeline()
+                config = rs.config()
+                config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
+                config.enable_stream(rs.stream.depth, 1280, 720, rs.format.z16, 30)
+
+                # Start streaming
+                pipeline.start(config)
+                frames = pipeline.wait_for_frames()
+                color_frame = frames.get_color_frame()
+                depth_frame = frames.get_depth_frame()
+
+                if not color_frame or not depth_frame:
+                    continue
+
+                color_image = np.asanyarray(color_frame.get_data())
+                depth_image = np.asanyarray(depth_frame.get_data())
+
+                # Saving images based on commands
+                for cmd in save_commands:
+                    if save_commands[cmd]:
+                        duration = globals()[f"duration_{cmd}"]
+                        waiting_time = globals()[f"waiting_{cmd}"]
+                        save_commands[cmd] = saving_image(cmd, color_image, depth_image, duration, waiting_time)
+
+                # Stream if streaming is active
+                if is_streaming:
+                    _, color_buffer = cv2.imencode('.jpg', crop_vertical(color_image),  [int(cv2.IMWRITE_JPEG_QUALITY), 70])
+                    _, depth_buffer = cv2.imencode('.jpg', crop_vertical(depth_image),  [int(cv2.IMWRITE_JPEG_QUALITY), 70])
+
+                    jpeg_color = base64.b64encode(color_buffer).decode('utf-8')
+                    jpeg_depth = base64.b64encode(depth_buffer).decode('utf-8')
+
+                    frame_data = json.dumps({'rgb': jpeg_color, 'depth': jpeg_depth})
+                    client_socket.sendall((frame_data + "\n").encode())
+
+    except socket.error as e:
+        print(f"Socket error: {e}")
+    finally:
+        client_socket.close()
+        client_socket.close()
+        pipeline.stop()
+
+
+def accept_connections():
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.bind(('localhost', 5002))
+    server_socket.listen(5)
+    print("Server is listening on localhost:5002")
+
+    while True:
+        client_socket, addr = server_socket.accept()
+        print(f"Connected to {addr}")
+        client_thread = threading.Thread(target=handle_client_connection, args=(client_socket,))
+        client_thread.start()
+
+if __name__ == "__main__":
+    accept_connections()

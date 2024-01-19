@@ -43,9 +43,9 @@ function createWindow() {
     mainWindow = null;
   });
 
-  const pythonPath = 'C:\\Users\\TEST-USER\\.pyenv\\pyenv-win\\versions\\3.8.10\\python.exe'; // Correct Python path
-  const pythonScriptPath = join(__dirname, 'jumping.py');
-  pythonProcess = spawn(pythonPath, [pythonScriptPath]);
+  // const pythonPath = 'C:\\Users\\TEST-USER\\.pyenv\\pyenv-win\\versions\\3.8.10\\python.exe'; // Correct Python path
+  // const pythonScriptPath = join(__dirname, 'jumping.py');
+  // pythonProcess = spawn(pythonPath, [pythonScriptPath]);
   
   let retryInterval = 1000; // Retry every 2 seconds
   let maxRetries = 5;
