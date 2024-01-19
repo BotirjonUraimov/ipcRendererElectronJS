@@ -123,7 +123,7 @@ def crop_vertical(img):
 
     # Calculate the starting x coordinate for cropping
     startx = original_width // 2 - new_width // 2 
-    
+
     # Crop the image to 405 (width) x 720 (height)
     cropped_img = img[0:720, startx:startx + new_width]
 
@@ -182,10 +182,10 @@ try:
         color_image = np.asanyarray(color_frame.get_data())
 
         # Example: Convert an image to JPEG format and base64 encode
-        _, buffer = cv2.imencode('.jpg', color_image)  # Assuming color_image is a numpy array
+        _, buffer = cv2.imencode('.jpg', crop_vertical(color_image))  # Assuming color_image is a numpy array
         jpeg_encoded = base64.b64encode(buffer).decode('utf-8')
         
-        _, buffer2 = cv2.imencode('.jpg', depth_image)  # Assuming color_image is a numpy array
+        _, buffer2 = cv2.imencode('.jpg', crop_vertical(depth_image))  # Assuming color_image is a numpy array
         jpeg_encoded2 = base64.b64encode(buffer2).decode('utf-8')
 
         # Serialize and send the frame data
