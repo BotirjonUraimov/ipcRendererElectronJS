@@ -142,13 +142,13 @@ document.getElementById('rom_sf_right').addEventListener('click', () => {
 //running socket server 
   document.getElementById('start-server').addEventListener('click', () => {
     //ipcRenderer.send('start-server');
-    ipcRenderer.send('save-command', 'start-stream');
+    ipcRenderer.send('save-command', 'start');
   });
  
 //stop socket server
   document.getElementById('stop-server').addEventListener('click', () => {
     //ipcRenderer.send('stop-server');
-    ipcRenderer.send('save-command', 'stop-stream');
+    ipcRenderer.send('save-command', 'stop');
 
   });
 
