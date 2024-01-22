@@ -39,7 +39,7 @@ function createWindow() {
 
   mainWindow.on("closed", () => {
     //client.destroy(); // Close the TCP connection
-    pythonProcess.kill(); // Terminate Python process
+  
     mainWindow = null;
   });
 
@@ -111,9 +111,7 @@ app.on("ready", createWindow);
 
 
 
-ipcMain.on('stop-server', (event) => {
-killPythonProcess();
-});
+
 
 ipcMain.on('save-command', (event, command) => {
   if (client) {
