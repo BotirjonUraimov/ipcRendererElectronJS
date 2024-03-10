@@ -31,7 +31,10 @@
     </div>
     <button id="equilibrium">equilibrium</button>
     <button id="flexibility">flexibility</button>
+    <button id="restart">restart</button>
+
     <button id="reaction_first_round">reaction_first_round</button>
+
     <button id="reaction_second_round">reaction_second_round</button>
     <button id="reaction_third_round">reaction_third_round</button>
     <button id="jumping_first_round">jumping_first_round</button>
@@ -74,6 +77,10 @@
       // button for back
       document.getElementById("flexibility").addEventListener("click", () => {
         ipcRenderer.send("save-command", "flexibility");
+      });
+
+      document.getElementById("restart").addEventListener("click", () => {
+        ipcRenderer.send("save-command", "restart");
       });
 
       // button for side

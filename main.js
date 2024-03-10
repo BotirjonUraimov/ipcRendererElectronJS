@@ -50,7 +50,7 @@ function createWindow() {
   // Setup TCP client connection
   function connectClient() {
     client = new net.Socket();
-    client.connect(5004, "192.168.0.145", () => {
+    client.connect(5003, "127.0.0.1", () => {
       console.log("Connected to Python server");
       mainWindow.webContents.send("server-status", "connected");
       retries = 0; // Reset retry count on successful connection
