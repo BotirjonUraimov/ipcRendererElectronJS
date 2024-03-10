@@ -50,7 +50,7 @@ function createWindow() {
   // Setup TCP client connection
   function connectClient() {
     client = new net.Socket();
-    client.connect(5004, "0.0.0.0", () => {
+    client.connect(5004, "192.168.0.145", () => {
       console.log("Connected to Python server");
       mainWindow.webContents.send("server-status", "connected");
       retries = 0; // Reset retry count on successful connection
@@ -76,8 +76,9 @@ function createWindow() {
       messages.forEach((message) => {
         if (message) {
           try {
-            const frameData = JSON.parse(message);
+            frameData = JSON.parse(message);
             mainWindow.webContents.send("frame-data", frameData);
+            console.log("frame-data:::::", frameData);
           } catch (err) {
             console.error("Error parsing data:", err.message);
           }
@@ -101,11 +102,17 @@ ipcMain.on("save-command", (event, command) => {
     client.write(command);
   }
 });
+ipcMain.on("data", (event, data) => {
+  console.log("frame-data:::", data);
+});
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
 
 app.on("activate", () => {
-  if (mainWindow === null) createWindow;
+  if (mainWindow === null) {
+    console.log("frame-data:::::", frameData);
+    createWindow;
+  }
 });

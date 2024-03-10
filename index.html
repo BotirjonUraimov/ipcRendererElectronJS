@@ -28,25 +28,14 @@
       <div id="rgb-container">
         <img id="rgb-image" src="" alt="RGB Frame" />
       </div>
-      <div id="depth-container">
-        <img id="depth-image" src="" alt="Depth Frame" />
-      </div>
     </div>
-
-    <button id="front">reaction 1</button>
-
-    <button id="back">For reaction 2</button>
-    <button id="side">For reaction 3</button>
-
-    <button id="rom_ha_left">flexibility</button>
-    <button id="rom_ha_right">equilibrium_first_round</button>
-    <button id="rom_hf_left">equilibrium_second_round</button>
-    <button id="rom_hf_right">jumping_first_round</button>
-
-    <button id="rom_sa_left">jumping_second_round</button>
-    <button id="rom_sa_right">rom_sa_right</button>
-    <button id="rom_sf_left">rom_sf_left</button>
-    <button id="rom_sf_right">rom_sf_right</button>
+    <button id="equilibrium">equilibrium</button>
+    <button id="flexibility">flexibility</button>
+    <button id="reaction_first_round">reaction_first_round</button>
+    <button id="reaction_second_round">reaction_second_round</button>
+    <button id="reaction_third_round">reaction_third_round</button>
+    <button id="jumping_first_round">jumping_first_round</button>
+    <button id="jumping_second_round">jumping_second_round</button>
 
     <script>
       const { ipcRenderer } = require("electron");
@@ -63,8 +52,10 @@
         });
       }
 
+      let frame_data = "";
       ipcRenderer.on("frame-data", (event, frameData) => {
         console.log("frameData", frameData);
+        frame_data = frameData;
         if (frameData.rgb) {
           const rgbImage = document.getElementById("rgb-image");
           rgbImage.src = `data:image/jpeg;base64,${frameData.rgb}`;
@@ -76,57 +67,46 @@
       });
 
       // button for front
-      document.getElementById("front").addEventListener("click", () => {
-        ipcRenderer.send("save-command", "reaction_first_round");
+      document.getElementById("equilibrium").addEventListener("click", () => {
+        ipcRenderer.send("save-command", "equilibrium");
       });
 
       // button for back
-      document.getElementById("back").addEventListener("click", () => {
-        ipcRenderer.send("save-command", "reaction_second_round");
-      });
-
-      // button for side
-      document.getElementById("side").addEventListener("click", () => {
-        ipcRenderer.send("save-command", "reaction_third_round");
-      });
-
-      // button for rom by foot
-      document.getElementById("rom_ha_left").addEventListener("click", () => {
+      document.getElementById("flexibility").addEventListener("click", () => {
         ipcRenderer.send("save-command", "flexibility");
       });
 
-      document.getElementById("rom_ha_right").addEventListener("click", () => {
-        ipcRenderer.send("save-command", "equilibrium_first_round");
-      });
+      // button for side
+      document
+        .getElementById("reaction_first_round")
+        .addEventListener("click", () => {
+          ipcRenderer.send("save-command", "reaction_first_round");
+        });
 
-      document.getElementById("rom_hf_left").addEventListener("click", () => {
-        ipcRenderer.send("save-command", "equilibrium_second_round");
-      });
+      // button for rom by foot
+      document
+        .getElementById("reaction_second_round")
+        .addEventListener("click", () => {
+          ipcRenderer.send("save-command", "reaction_second_round");
+        });
 
-      document.getElementById("rom_hf_right").addEventListener("click", () => {
-        ipcRenderer.send("save-command", "jumping_first_round");
-      });
+      document
+        .getElementById("reaction_third_round")
+        .addEventListener("click", () => {
+          ipcRenderer.send("save-command", "reaction_third_round");
+        });
 
-      // button for rom by hand
-      document.getElementById("rom_sa_left").addEventListener("click", () => {
-        ipcRenderer.send("save-command", "jumping_second_round");
-      });
+      document
+        .getElementById("jumping_first_round")
+        .addEventListener("click", () => {
+          ipcRenderer.send("save-command", "jumping_first_round");
+        });
 
-      document.getElementById("rom_sa_right").addEventListener("click", () => {
-        ipcRenderer.send("save-command", "rom_sa_right");
-        alert("Image saved successfully!");
-      });
-
-      document.getElementById("rom_sf_left").addEventListener("click", () => {
-        ipcRenderer.send("save-command", "rom_sf_left");
-        alert("Image saved successfully!");
-      });
-
-      document.getElementById("rom_sf_right").addEventListener("click", () => {
-        ipcRenderer.send("save-command", "rom_sf_right");
-
-        alert("Image saved successfully!");
-      });
+      document
+        .getElementById("jumping_second_round")
+        .addEventListener("click", () => {
+          ipcRenderer.send("save-command", "jumping_second_round");
+        });
 
       //running socket server
       document.getElementById("start-server").addEventListener("click", () => {
